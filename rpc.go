@@ -2,16 +2,60 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
-	"math"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
-type Token struct {
-	Address string
-	Balance float64
+type RPC struct {
+	URL string
+}
+
+type rpcGetBalance struct {
+	Jsonrpc string `json:"jsonrpc"`
+	Result  struct {
+		Context struct {
+			APIVersion string `json:"apiVersion"`
+			Slot       int    `json:"slot"`
+		} `json:"context"`
+		Value int `json:"value"`
+	} `json:"result"`
+	ID int `json:"id"`
+}
+
+func (rpc *RPC) GetBalance(walletAddress string) (rpcGetBalance, error) {
+	resp, err := http.Post(rpc.URL, "application/json", strings.NewReader(`
+	{
+    "jsonrpc": "2.0",
+    "id": 1,
+		"method": "getBalance",
+    "params": [
+      "`+walletAddress+`"
+    ]
+  }
+	`))
+	if err != nil {
+		return rpcGetBalance{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return rpcGetBalance{}, err
+	}
+
+	var data rpcGetBalance
+	if err := json.Unmarshal(body, &data); err != nil {
+		return rpcGetBalance{}, err
+	}
+
+	if data.ID == 0 {
+		err := fmt.Errorf("error: %s", string(body))
+		return rpcGetBalance{}, err
+	}
+
+	return data, nil
 }
 
 type rpcGetTokenAccountsByOwnerResp struct {
@@ -53,8 +97,8 @@ type rpcGetTokenAccountsByOwnerResp struct {
 	ID int `json:"id"`
 }
 
-func GetAccountTokens(rpcURL string, walletAddress string) ([]Token, error) {
-	resp, err := http.Post(rpcURL, "application/json", strings.NewReader(`
+func (rpc *RPC) GetTokenAccountsByOwner(walletAddress string) (rpcGetTokenAccountsByOwnerResp, error) {
+	resp, err := http.Post(rpc.URL, "application/json", strings.NewReader(`
 	{
     "jsonrpc": "2.0",
     "id": 1,
@@ -71,38 +115,24 @@ func GetAccountTokens(rpcURL string, walletAddress string) ([]Token, error) {
   }
 	`))
 	if err != nil {
-		return nil, err
+		return rpcGetTokenAccountsByOwnerResp{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return rpcGetTokenAccountsByOwnerResp{}, err
 	}
 
-	var tokenAccounts rpcGetTokenAccountsByOwnerResp
-	if err := json.Unmarshal(body, &tokenAccounts); err != nil {
-		return nil, err
+	var data rpcGetTokenAccountsByOwnerResp
+	if err := json.Unmarshal(body, &data); err != nil {
+		return rpcGetTokenAccountsByOwnerResp{}, err
 	}
 
-	var tokens []Token
-	for _, tokenAccount := range tokenAccounts.Result.Value {
-		tokenAccountInfo := tokenAccount.Account.Data.Parsed.Info
-
-		// skip NFTs
-		if tokenAccountInfo.TokenAmount.Amount == "1" && tokenAccountInfo.TokenAmount.Decimals == 0 {
-			continue
-		}
-
-		amount, err := strconv.ParseFloat(tokenAccountInfo.TokenAmount.Amount, 32)
-		if err != nil {
-			return nil, err
-		}
-
-		balance := amount / math.Pow(10, float64(tokenAccountInfo.TokenAmount.Decimals))
-
-		tokens = append(tokens, Token{Address: tokenAccountInfo.Mint, Balance: balance})
+	if data.ID == 0 {
+		err := fmt.Errorf("error: %s", string(body))
+		return rpcGetTokenAccountsByOwnerResp{}, err
 	}
 
-	return tokens, nil
+	return data, nil
 }
