@@ -1,68 +1,81 @@
 package main
 
 import (
-	"fmt"
-	"math"
-	"strconv"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	kingpin "github.com/alecthomas/kingpin/v2"
 )
 
-const RPC_URL = ""
+var (
+	solanaBalance = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "solana_wallet_balance",
+			Help: "Balance of a given wallet in SOL.",
+		},
+		[]string{"wallet"},
+	)
+	tokenBalance = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "solana_wallet_token_balance",
+			Help: "Balance of a given wallet in a given token.",
+		},
+		[]string{"wallet", "token"},
+	)
+	lastUpdate = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "solana_wallet_last_update_ts",
+			Help: "Timestamp of the last update.",
+		},
+	)
+)
 
-func GetAccountSolanaBalance(rpc RPC, walletAddress string) (float64, error) {
-	balance, err := rpc.GetBalance(walletAddress)
-	if err != nil {
-		return 0, err
-	}
+func recordMetrics(rpc RPC, wallets string, cacheSeconds int) {
+	go func() {
+		for {
+			for _, wallet := range strings.Split(wallets, ",") {
+				balance, err := rpc.GetAccountSolanaBalance(wallet)
+				if err != nil {
+					log.Println(err)
+				}
+				solanaBalance.WithLabelValues(wallet).Set(balance)
 
-	return float64(balance.Result.Value) / math.Pow(10, 9), nil
-}
+				tokens, err := rpc.GetAccountTokens(wallet)
+				if err != nil {
+					log.Println(err)
+				}
+				for _, token := range tokens {
+					tokenBalance.WithLabelValues(wallet, token.Address).Set(token.Balance)
+				}
+			}
 
-type Token struct {
-	Address string
-	Balance float64
-}
-
-func GetAccountTokens(rpc RPC, walletAddress string) ([]Token, error) {
-	tokenAccounts, err := rpc.GetTokenAccountsByOwner(walletAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	var tokens []Token
-	for _, tokenAccount := range tokenAccounts.Result.Value {
-		tokenAccountInfo := tokenAccount.Account.Data.Parsed.Info
-
-		// skip NFTs
-		if tokenAccountInfo.TokenAmount.Amount == "1" && tokenAccountInfo.TokenAmount.Decimals == 0 {
-			continue
+			lastUpdate.Set(float64(time.Now().Unix()))
+			time.Sleep(time.Duration(cacheSeconds) * time.Second)
 		}
-
-		amount, err := strconv.ParseFloat(tokenAccountInfo.TokenAmount.Amount, 32)
-		if err != nil {
-			return nil, err
-		}
-
-		balance := amount / math.Pow(10, float64(tokenAccountInfo.TokenAmount.Decimals))
-
-		tokens = append(tokens, Token{Address: tokenAccountInfo.Mint, Balance: balance})
-	}
-
-	return tokens, nil
+	}()
 }
 
 func main() {
-	rpc := RPC{URL: RPC_URL}
+	var (
+		listenAddress = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9745").String()
+		rpcURL        = kingpin.Flag("solana.rpc", "Solana RPC provider URL.").Required().String()
+		wallets       = kingpin.Flag("solana.wallets", "Comma separated list of solana wallets.").Required().String()
+		cacheSeconds  = kingpin.Flag("solana.cacheseconds", "Number of seconds to cache values for.").Default("300").Int()
+	)
+	kingpin.Parse()
 
-	tokens, err := GetAccountTokens(rpc, "")
-	if err != nil {
-		panic(err)
+	recordMetrics(RPC{URL: *rpcURL}, *wallets, *cacheSeconds)
+
+	http.Handle("/metrics", promhttp.Handler())
+
+	log.Printf("Listening on address %s", *listenAddress)
+	if err := http.ListenAndServe(*listenAddress, nil); err != nil {
+		log.Fatalf("Error starting HTTP server (%s)", err)
 	}
-	fmt.Println(tokens)
-
-	balance, err := GetAccountSolanaBalance(rpc, "")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(balance)
-
 }

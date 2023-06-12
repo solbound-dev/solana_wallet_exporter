@@ -4,12 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
 type RPC struct {
 	URL string
+}
+
+func (rpc *RPC) GetAccountSolanaBalance(walletAddress string) (float64, error) {
+	balance, err := rpc.rpcGetBalance(walletAddress)
+	if err != nil {
+		return 0, err
+	}
+
+	return float64(balance.Result.Value) / math.Pow(10, 9), nil
 }
 
 type rpcGetBalance struct {
@@ -24,7 +35,7 @@ type rpcGetBalance struct {
 	ID int `json:"id"`
 }
 
-func (rpc *RPC) GetBalance(walletAddress string) (rpcGetBalance, error) {
+func (rpc *RPC) rpcGetBalance(walletAddress string) (rpcGetBalance, error) {
 	resp, err := http.Post(rpc.URL, "application/json", strings.NewReader(`
 	{
     "jsonrpc": "2.0",
@@ -56,6 +67,39 @@ func (rpc *RPC) GetBalance(walletAddress string) (rpcGetBalance, error) {
 	}
 
 	return data, nil
+}
+
+type Token struct {
+	Address string
+	Balance float64
+}
+
+func (rpc *RPC) GetAccountTokens(walletAddress string) ([]Token, error) {
+	tokenAccounts, err := rpc.rpcGetTokenAccountsByOwner(walletAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	var tokens []Token
+	for _, tokenAccount := range tokenAccounts.Result.Value {
+		tokenAccountInfo := tokenAccount.Account.Data.Parsed.Info
+
+		// skip NFTs
+		if tokenAccountInfo.TokenAmount.Amount == "1" && tokenAccountInfo.TokenAmount.Decimals == 0 {
+			continue
+		}
+
+		amount, err := strconv.ParseFloat(tokenAccountInfo.TokenAmount.Amount, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		balance := amount / math.Pow(10, float64(tokenAccountInfo.TokenAmount.Decimals))
+
+		tokens = append(tokens, Token{Address: tokenAccountInfo.Mint, Balance: balance})
+	}
+
+	return tokens, nil
 }
 
 type rpcGetTokenAccountsByOwnerResp struct {
@@ -97,7 +141,7 @@ type rpcGetTokenAccountsByOwnerResp struct {
 	ID int `json:"id"`
 }
 
-func (rpc *RPC) GetTokenAccountsByOwner(walletAddress string) (rpcGetTokenAccountsByOwnerResp, error) {
+func (rpc *RPC) rpcGetTokenAccountsByOwner(walletAddress string) (rpcGetTokenAccountsByOwnerResp, error) {
 	resp, err := http.Post(rpc.URL, "application/json", strings.NewReader(`
 	{
     "jsonrpc": "2.0",
