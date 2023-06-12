@@ -1,3 +1,16 @@
+// Copyright 2023 Bartol Deak
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -63,7 +76,7 @@ func recordMetrics(rpc RPC, wallets string, cacheSeconds int) {
 
 func main() {
 	var (
-		listenAddress = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9745").String()
+		listenAddress = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9357").String()
 		rpcURL        = kingpin.Flag("solana.rpc", "Solana RPC provider URL.").Required().String()
 		wallets       = kingpin.Flag("solana.wallets", "Comma separated list of solana wallets.").Required().String()
 		cacheSeconds  = kingpin.Flag("solana.cacheseconds", "Number of seconds to cache values for.").Default("300").Int()
