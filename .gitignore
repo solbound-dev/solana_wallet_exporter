@@ -1,3 +1,4 @@
 .build
+.release
 .tarballs
 solana_wallet_exporter
