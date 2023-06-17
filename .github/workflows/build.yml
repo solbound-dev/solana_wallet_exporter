@@ -1,6 +1,7 @@
 name: Build
 
-on: [push]
+on:
+  pull_request:
 
 jobs:
   build:
@@ -22,25 +23,25 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: solana_wallet_exporter_linux_amd64_${{ github.sha }}
+          name: solana_wallet_exporter_linux_amd64
           path: .build/linux-amd64/solana_wallet_exporter
 
       - uses: actions/upload-artifact@v3
         with:
-          name: solana_wallet_exporter_linux_arm64_${{ github.sha }}
+          name: solana_wallet_exporter_linux_arm64
           path: .build/linux-arm64/solana_wallet_exporter
 
       - uses: actions/upload-artifact@v3
         with:
-          name: solana_wallet_exporter_linux_armv7_${{ github.sha }}
+          name: solana_wallet_exporter_linux_armv7
           path: .build/linux-armv7/solana_wallet_exporter
 
       - uses: actions/upload-artifact@v3
         with:
-          name: solana_wallet_exporter_darwin_amd64_${{ github.sha }}
+          name: solana_wallet_exporter_darwin_amd64
           path: .build/darwin-amd64/solana_wallet_exporter
 
       - uses: actions/upload-artifact@v3
         with:
-          name: solana_wallet_exporter_windows_amd64_${{ github.sha }}
+          name: solana_wallet_exporter_windows_amd64
           path: .build/windows-amd64/solana_wallet_exporter.exe
