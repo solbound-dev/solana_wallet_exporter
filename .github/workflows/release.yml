@@ -27,6 +27,9 @@ jobs:
         run: |
           echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" --username "$DOCKER_USERNAME" --password-stdin
 
+      - name: Pull docker image
+        run: make docker-pull
+
       - name: Tag docker latest
         run: make docker-tag-latest
 

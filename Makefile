@@ -14,6 +14,12 @@ tarballs: promu
 	@echo ">> building release tarballs"
 	$(PROMU) crossbuild tarballs
 
+PULL_DOCKER_ARCHS = $(addprefix docker-pull-,$(DOCKER_ARCHS))
+.PHONY: docker-pull $(PULL_DOCKER_ARCHS)
+docker-pull: $(PULL_DOCKER_ARCHS)
+$(PULL_DOCKER_ARCHS): docker-pull-%:
+	docker pull "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME)-linux-$*:$(SANITIZED_DOCKER_IMAGE_TAG)"
+
 PUBLISH_LATEST_DOCKER_ARCHS = $(addprefix docker-publish-latest-,$(DOCKER_ARCHS))
 .PHONY: docker-publish-latest $(PUBLISH_LATEST_DOCKER_ARCHS)
 docker-publish-latest: $(PUBLISH_LATEST_DOCKER_ARCHS)
