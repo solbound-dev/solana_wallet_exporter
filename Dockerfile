@@ -1,8 +1,12 @@
-FROM quay.io/prometheus/busybox:latest
+ARG ARCH="amd64"
+ARG OS="linux"
+FROM quay.io/prometheus/busybox-${OS}-${ARCH}:latest
 LABEL maintainer="Bartol Deak <b@bdeak.net>"
 
-COPY solana_wallet_exporter /bin/solana_wallet_exporter
+ARG ARCH="amd64"
+ARG OS="linux"
+COPY .build/${OS}-${ARCH}/solana_wallet_exporter /bin/solana_wallet_exporter
 
 USER nobody
-EXPOSE 9357
+EXPOSE 18899
 ENTRYPOINT [ "/bin/solana_wallet_exporter" ]
