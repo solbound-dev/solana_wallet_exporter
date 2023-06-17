@@ -30,7 +30,7 @@ jobs:
       - name: Tag docker latest
         run: make docker-tag-latest
 
-      - name: Publish docker latest
+      - name: Publish docker image
         run: make docker-publish-latest
 
       - name: Publish docker manifest
