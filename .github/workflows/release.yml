@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.19
+
+      - uses: actions/checkout@v3
+
+      - name: Cross build for all platforms
+        run: make crossbuild
+
+      - name: Build release tarballs
+        run: make tarballs
+
+      - name: Build docker images
+        run: make docker
+
+      - name: Tag docker images
+        run: make docker-tag-latest
+
+      - name: Docker login
+        env:
+          DOCKER_USERNAME: ${{ github.actor }}
+          DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          DOCKER_REGISTRY: ghcr.io
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" --username "$DOCKER_USERNAME" --password-stdin
+
+      - name: Publish docker images
+        run: make docker-publish
+
+      - name: Publish docker manifest
+        run: make docker-manifest

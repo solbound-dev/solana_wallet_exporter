@@ -76,7 +76,7 @@ func recordMetrics(rpc RPC, wallets string, cacheSeconds int) {
 
 func main() {
 	var (
-		listenAddress = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9357").String()
+		listenAddress = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":18899").String()
 		rpcURL        = kingpin.Flag("solana.rpc", "Solana RPC provider URL.").Required().String()
 		wallets       = kingpin.Flag("solana.wallets", "Comma separated list of solana wallets.").Required().String()
 		cacheSeconds  = kingpin.Flag("solana.cacheseconds", "Number of seconds to cache values for.").Default("300").Int()

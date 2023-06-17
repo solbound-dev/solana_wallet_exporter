@@ -10,6 +10,6 @@ crossbuild: promu
 	$(PROMU) crossbuild
 
 .PHONY: tarballs
-tarballs: crossbuild
+tarballs: promu
 	@echo ">> building release tarballs"
 	$(PROMU) crossbuild tarballs
