@@ -51,13 +51,13 @@ type rpcGetBalance struct {
 func (rpc *RPC) rpcGetBalance(walletAddress string) (rpcGetBalance, error) {
 	resp, err := http.Post(rpc.URL, "application/json", strings.NewReader(`
 	{
-    "jsonrpc": "2.0",
-    "id": 1,
+		"jsonrpc": "2.0",
+		"id": 1,
 		"method": "getBalance",
-    "params": [
-      "`+walletAddress+`"
-    ]
-  }
+		"params": [
+			"`+walletAddress+`"
+		]
+	}
 	`))
 	if err != nil {
 		return rpcGetBalance{}, err
@@ -157,19 +157,19 @@ type rpcGetTokenAccountsByOwnerResp struct {
 func (rpc *RPC) rpcGetTokenAccountsByOwner(walletAddress string) (rpcGetTokenAccountsByOwnerResp, error) {
 	resp, err := http.Post(rpc.URL, "application/json", strings.NewReader(`
 	{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "getTokenAccountsByOwner",
-    "params": [
-      "`+walletAddress+`",
-      {
-        "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-      },
-      {
-        "encoding": "jsonParsed"
-      }
-    ]
-  }
+		"jsonrpc": "2.0",
+		"id": 1,
+		"method": "getTokenAccountsByOwner",
+		"params": [
+			"`+walletAddress+`",
+			{
+				"programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+			},
+			{
+				"encoding": "jsonParsed"
+			}
+		]
+	}
 	`))
 	if err != nil {
 		return rpcGetTokenAccountsByOwnerResp{}, err
