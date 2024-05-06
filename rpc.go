@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -143,10 +144,10 @@ type rpcGetTokenAccountsByOwnerResp struct {
 					Program string `json:"program"`
 					Space   int    `json:"space"`
 				} `json:"data"`
-				Executable bool   `json:"executable"`
-				Lamports   int    `json:"lamports"`
-				Owner      string `json:"owner"`
-				RentEpoch  int    `json:"rentEpoch"`
+				Executable bool    `json:"executable"`
+				Lamports   int     `json:"lamports"`
+				Owner      string  `json:"owner"`
+				RentEpoch  big.Int `json:"rentEpoch"`
 			} `json:"account"`
 			Pubkey string `json:"pubkey"`
 		} `json:"value"`
